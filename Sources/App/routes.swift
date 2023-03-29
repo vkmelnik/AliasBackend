@@ -2,6 +2,12 @@ import Fluent
 import Vapor
 
 func routes(_ app: Application) throws {
+    let protected = app.grouped(UserAuthenticator())
+        .grouped(User.guardMiddleware())
+    protected.get("me") { req -> String in
+        try req.auth.require(User.self).name
+    }
+    
     app.get { req async in
         "It works!"
     }
