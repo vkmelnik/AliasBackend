@@ -15,7 +15,7 @@ struct UserAuthenticator: AsyncBasicAuthenticator {
         for request: Request
     ) async throws {
         if basic.username == "test" && basic.password == "secret" {
-            request.auth.login(User(name: "Vapor"))
+            //request.auth.login(User(name: "Vapor", email: "", passwordHash: ""))
         }
    }
 }
