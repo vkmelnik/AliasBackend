@@ -35,6 +35,41 @@ func routes(_ app: Application) throws {
         return user
     }
     
+    app.post("create_room") { req async throws -> Room in
+        let roomCreate = try req.content.decode(Room.Create.self)
+        var room: Room
+        if let invitationCode = roomCreate.invitationCode {
+            room = Room(name: roomCreate.name, invitationCode: invitationCode,
+            admin: roomCreate.admin)
+        } else {
+            room = Room(name: roomCreate.name, invitationCode: nil,
+            admin: roomCreate.admin)
+        }
+        Games.shared.append(room)
+        return room
+    }
+    
+    app.post("join_room") { req async throws -> Bool in
+        let joinRoomCreate = try req.content.decode(JoinRoom.Create.self)
+        if let invitationCode = joinRoomCreate.invitationCode {
+            for room in Games.shared {
+                if room.invitationCode == invitationCode && joinRoomCreate.idRoom == room.id {
+                    room.players.append(joinRoomCreate.userToJoin)
+                    return true
+                }
+            }
+            return false
+        } else {
+            for room in Games.shared {
+                if joinRoomCreate.idRoom == room.id {
+                    room.players.append(joinRoomCreate.userToJoin)
+                    return true
+                }
+            }
+            return false
+        }
+    }
+    
     app.get { req async in
         "It works!"
     }
