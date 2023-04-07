@@ -49,7 +49,22 @@ func routes(_ app: Application) throws {
     app.get("hello") { req async -> String in
         "Hello, world!"
     }
-    
+
+    app.post("create_room") { req async throws -> String in
+        let roomCreate = try req.content.decode(Room.Create.self)
+        var room: Room
+        if let invitationCode = roomCreate.invitationCode {
+            room = Room(name: roomCreate.name, invitationCode: invitationCode,
+            admin: roomCreate.admin)
+        } else {
+            room = Room(name: roomCreate.name, invitationCode: nil,
+            admin: roomCreate.admin)
+        }
+        rooms[roomCreate.name] = room
+        Games.shared.append(room)
+        return roomCreate.name
+    }
+
     app.webSocket("room", ":id") { req, ws in
         var username: String? = nil
         var room: Room?  = nil
@@ -57,7 +72,7 @@ func routes(_ app: Application) throws {
             // check for auth
             guard let roomId = req.parameters.get("id") else { return }
             if rooms[roomId] == nil {
-                rooms[roomId] = Room()
+                return
             }
             room = rooms[roomId]
             let jsonDecoder = JSONDecoder()
@@ -72,6 +87,12 @@ func routes(_ app: Application) throws {
             // check authorization
             guard let token = json?["token"] else {
                 return
+            }
+
+            if let code = rooms[roomId]?.invitationCode {
+                guard let userCode = json?["invitationCode"], code == userCode else {
+                    return
+                }
             }
 
             do {
