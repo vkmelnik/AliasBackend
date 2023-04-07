@@ -14,7 +14,7 @@ struct BearerAuthenticator: AsyncBearerAuthenticator {
         bearer: BearerAuthorization,
         for request: Request
     ) async throws {
-       if bearer.token == "foo" {
+        if bearer.token == "foo" {
            //request.auth.login(User(name: "Vapor"))
        }
    }

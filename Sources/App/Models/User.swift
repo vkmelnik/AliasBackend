@@ -20,16 +20,20 @@ final class User: Model, Content, Authenticatable {
     @Field(key: "email")
     var email: String
 
-    @Field(key: "password_hash")
-    var passwordHash: String
+    @Field(key: "password")
+    var password: String
+
+    @Field(key: "token")
+    var token: String
 
     init() { }
 
-    init(id: UUID? = nil, name: String, email: String, passwordHash: String) {
+    init(id: UUID? = nil, name: String, email: String, password: String, token: String) {
         self.id = id
         self.name = name
         self.email = email
-        self.passwordHash = passwordHash
+        self.password = password
+        self.token = token
     }
 }
 
@@ -42,7 +46,8 @@ extension User {
                 .id()
                 .field("name", .string, .required)
                 .field("email", .string, .required)
-                .field("password_hash", .string, .required)
+                .field("password", .string, .required)
+                .field("token", .string, .required)
                 .unique(on: "email")
                 .create()
         }

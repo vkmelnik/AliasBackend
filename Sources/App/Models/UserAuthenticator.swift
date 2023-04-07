@@ -6,6 +6,7 @@
 //
 
 import Vapor
+import Fluent
 
 struct UserAuthenticator: AsyncBasicAuthenticator {
     typealias User = App.User
@@ -14,8 +15,13 @@ struct UserAuthenticator: AsyncBasicAuthenticator {
         basic: BasicAuthorization,
         for request: Request
     ) async throws {
-        if basic.username == "test" && basic.password == "secret" {
-            //request.auth.login(User(name: "Vapor", email: "", passwordHash: ""))
+        guard let user = try await User.query(on: request.db)
+            .filter(\.$name == basic.username)
+            .first() else {
+            return
+        }
+        if basic.password == user.password {
+            request.auth.login(User(name: user.name, email: user.email, password: user.password, token: ""))
         }
    }
 }

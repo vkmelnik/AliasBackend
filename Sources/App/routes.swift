@@ -2,17 +2,20 @@ import Fluent
 import Vapor
 
 func routes(_ app: Application) throws {
-    let protected = app.grouped(UserAuthenticator())
-        .grouped(User.guardMiddleware())
-    let protectedByBearer = app.grouped(BearerAuthenticator())
-        .grouped(User.guardMiddleware())
-
-    protected.get("auth") { req -> String in
-        try req.auth.require(User.self).name
-    }
-
-    protectedByBearer.get("login") { req -> String in
-        try req.auth.require(User.self).name
+    app.post("auth") { req async throws -> String in
+        let requestUser = try req.content.decode(User.Create.self)
+        guard let user = try await User.query(on: req.db)
+            .filter(\.$name == requestUser.name)
+            .first() else {
+            return ""
+        }
+        let token: String = [UInt8].random(count: 32).base64
+        if requestUser.password == user.password {
+            user.token = token
+            try await user.update(on: req.db)
+            return token
+        }
+        return ""
     }
 
     app.post("users") { req async throws -> User in
@@ -21,10 +24,12 @@ func routes(_ app: Application) throws {
         guard create.password == create.confirmPassword else {
             throw Abort(.badRequest, reason: "Passwords did not match")
         }
-        let user = try User(
+        let token: String = [UInt8].random(count: 32).base64
+        let user = User(
             name: create.name,
             email: create.email,
-            passwordHash: Bcrypt.hash(create.password)
+            password: create.password,
+            token: token
         )
         try await user.save(on: req.db)
         return user
