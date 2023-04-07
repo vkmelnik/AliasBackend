@@ -63,9 +63,32 @@ func routes(_ app: Application) throws {
             let jsonDecoder = JSONDecoder()
             guard let jsonData = text.data(using: .utf8) else { return }
             let json = try? jsonDecoder.decode(Dictionary<String, String>.self, from: jsonData)
+
+            guard let u = json?["username"] else {
+                return
+            }
+            username = u
+
+            // check authorization
+            guard let token = json?["token"] else {
+                return
+            }
+
+            do {
+                guard let username = username, let user = try await User.query(on: req.db)
+                    .filter(\.$name == username)
+                    .first() else {
+                    return
+                }
+
+                if user.token != token {
+                    return
+                }
+            } catch {
+                return
+            }
             
-            if let u = json?["username"], room?.connections[u] == nil {
-                username = u
+            if room?.connections[u] == nil {
                 room?.connections[u] = ws
                 room?.bot("\(u) has joined. 👋")
             }
